@@ -60,10 +60,6 @@
     return this.y = this.originalFrame.screenFrame.y;
   };
 
-  stage.center();
-
-  stage.pixelAlign();
-
   addToStage = function(layer) {
     layer.superLayer = stage;
     layer.x = layer.originalFrame.x;
@@ -140,11 +136,11 @@
 
   myLayers.keyboard.states.switchInstant("inactive");
 
-  myLayers.keyboard.states["switch"]("active");
-
-  myLayers.keyboard.bringToFront();
-
-  myLayers.keyboard.pullIntoLimbo();
+  if (Utils.isMobile() === false) {
+    myLayers.keyboard.states["switch"]("active");
+    myLayers.keyboard.bringToFront();
+    myLayers.keyboard.pullIntoLimbo();
+  }
 
   myLayers.prompt.states.add({
     active: {
@@ -220,16 +216,29 @@
   prompts.forEach(function(element, index) {
     return element.on(Events.Click, function() {
       var currentPos;
+      console.log(this.superLayer.states.current);
       if (this.superLayer.states.current === "default") {
-        sections.forEach(function(element, index) {
-          return element.states["switch"]("back");
-        });
+        sections.forEach((function(_this) {
+          return function(element, index) {
+            if (_.contains(element.subLayers, _this) === false) {
+              return element.states.switchInstant("back");
+            } else {
+              return element.states["switch"]("back");
+            }
+          };
+        })(this));
         slider.draggable.enabled = true;
         disableEditable();
       } else {
-        sections.forEach(function(element, index) {
-          return element.states["switch"]("default");
-        });
+        sections.forEach((function(_this) {
+          return function(element, index) {
+            if (_.contains(element.subLayers, _this) === false) {
+              return element.states.switchInstant("default");
+            } else {
+              return element.states["switch"]("default");
+            }
+          };
+        })(this));
         slider.draggable.enabled = false;
         enableEditable();
         currentPos = slider.states.current.slice(-1);
@@ -265,7 +274,7 @@
 
   changeX = 0;
 
-  threshold = 180;
+  threshold = 120;
 
   slider.draggable.speedY = 0;
 
@@ -317,8 +326,18 @@
   goNext = function(direction) {
     var currentPos, nextPos;
     currentPos = slider.states.current.slice(-1);
-    nextPos = currentPos > sections.length - 2 ? 0 : parseInt(currentPos) + 1;
-    return slider.states["switch"]("pos" + nextPos);
+    if (currentPos > sections.length - 2) {
+      nextPos = 0;
+      slider.states.animationOptions = {
+        curve: "spring(75,20,1)"
+      };
+    } else {
+      nextPos = parseInt(currentPos) + 1;
+    }
+    slider.states["switch"]("pos" + nextPos);
+    return slider.states.animationOptions = {
+      curve: "spring(200,20,10)"
+    };
   };
 
   updateWordCount = function() {
@@ -373,7 +392,5 @@
   slider.states.switchInstant("pos" + startingPos);
 
   slider.draggable.enabled = false;
-
-  updateWordCount();
 
 }).call(this);

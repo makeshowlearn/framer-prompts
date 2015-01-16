@@ -53,8 +53,8 @@ Layer::pullIntoLimbo = ->
   @y = @originalFrame.screenFrame.y
 
 # Pull statusbar off artboard so it's always on top
-stage.center()
-stage.pixelAlign()
+#stage.center()
+#stage.pixelAlign()
 
 addToStage = (layer) ->
   layer.superLayer = stage
@@ -105,9 +105,11 @@ myLayers.keyboard.states.add
     y: 667
 
 myLayers.keyboard.states.switchInstant "inactive"
-myLayers.keyboard.states.switch "active"
-myLayers.keyboard.bringToFront()
-myLayers.keyboard.pullIntoLimbo()
+if Utils.isMobile() == false
+#  alert "test"
+  myLayers.keyboard.states.switch "active"
+  myLayers.keyboard.bringToFront()
+  myLayers.keyboard.pullIntoLimbo()
 
 # Prompt setup
 myLayers.prompt.states.add
@@ -196,14 +198,23 @@ myLayers.keyboard.bringToFront()
 # http://framerjs.com/examples/preview/#draggable-range.framer#code
 prompts.forEach (element, index) ->
   element.on Events.Click, ->
+    console.log @superLayer.states.current
     if @superLayer.states.current is "default"
-      sections.forEach (element, index) ->
-        element.states.switch "back"
+      sections.forEach (element, index) =>
+        if _.contains(element.subLayers, @) == false
+          element.states.switchInstant "back"
+        else
+          element.states.switch "back"
+
       slider.draggable.enabled = true
       disableEditable()
     else
-      sections.forEach (element, index) ->
-        element.states.switch "default"
+      sections.forEach (element, index) =>
+        if _.contains(element.subLayers, @) == false
+          element.states.switchInstant "default"
+        else
+          element.states.switch "default"
+
       slider.draggable.enabled = false
       enableEditable()
 
@@ -225,7 +236,7 @@ enableEditable = ->
 # Adapting from hierarchical timing
 startX = 0
 changeX = 0
-threshold = 180
+threshold = 120
 
 slider.draggable.speedY = 0
 slider.on Events.DragStart, (event) ->
@@ -276,9 +287,17 @@ snapBack = ->
 goNext = (direction) ->
   currentPos = slider.states.current.slice(-1)
 #  console.log currentPos
-  nextPos = if currentPos > sections.length - 2 then 0 else parseInt(currentPos) + 1
+  if currentPos > sections.length - 2
+    nextPos = 0
+    # slow animation down
+    slider.states.animationOptions =
+      curve: "spring(75,20,1)"
+  else
+    nextPos = parseInt(currentPos) + 1
 
   slider.states.switch "pos" + nextPos
+  slider.states.animationOptions =
+    curve: "spring(200,20,10)"
 
 updateWordCount = ->
   typetotal = 0
@@ -334,4 +353,29 @@ startingPos = _.random(0, 4)
 slider.states.switchInstant "pos" + startingPos
 slider.draggable.enabled = false
 
-updateWordCount()
+#updateWordCount()
+
+
+#document.addEventListener 'keydown', (event, layer) ->
+#  keyCode = event.which
+#  switch key
+#      when 13
+#        animationNext = goNext()
+#        animationNext.on Events.AnimationEnd, ->
+#          sections.forEach (element, index) ->
+#            element.states.switch "default"
+#
+#          typeareas.forEach (element, index) ->
+#            localStorage.setItem 'prompt' + index, element.html
+#
+#          currentPos = slider.states.current.slice(-1)
+#          document.getElementById("content" + currentPos).focus()
+
+
+
+
+#$(document).bind('keyup keydown', function(e) {
+#shifted = e.shiftKey;
+#return cntrled = e.metaKey || e.ctrlKey;
+#});
+
